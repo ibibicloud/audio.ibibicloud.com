@@ -1,4 +1,4 @@
-@charset "UTF-8";
+// @charset "UTF-8";
 
 var songList = [
 	{title: '演示专用音频', src: 'https://audio.ibibicloud.com/list/demo.m4a'},
