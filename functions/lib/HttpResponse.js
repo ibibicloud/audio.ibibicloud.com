@@ -1,5 +1,5 @@
 
-export class Response
+export class HttpResponse
 {
     /**
      * 构造函数
@@ -16,7 +16,7 @@ export class Response
      * 设置响应头
      * @param {string} key 头名称
      * @param {string} value 头内容
-     * @return {Response}
+     * @return {HttpResponse}
      */
     header(key, value)
     {
@@ -27,11 +27,24 @@ export class Response
     /**
      * 批量设置响应头
      * @param {object} headers
-     * @return {Response}
+     * @return {HttpResponse}
      */
     withHeaders(headers)
     {
         this._headers = { ...this._headers, ...headers };
+        return this;
+    }
+
+    /**
+     * 设置 CORS 跨域
+     * @param {string} allowedOrigin 允许的源
+     * @return {HttpResponse}
+     */
+    cors(allowedOrigin = '*')
+    {
+        this._headers['Access-Control-Allow-Origin'] = allowedOrigin;
+        this._headers['Access-Control-Allow-Methods'] = 'GET, POST, PUT, DELETE, OPTIONS';
+        this._headers['Access-Control-Allow-Headers'] = 'Content-Type';
         return this;
     }
 
@@ -89,7 +102,10 @@ export class Response
      */
     redirect(url, code = 302)
     {
-        return this.header('Location', url).json({}, code);
+        return new Response(null, {
+            status: code,
+            headers: { ...this._headers, Location: url }
+        });
     }
 
     /**
