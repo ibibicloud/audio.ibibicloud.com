@@ -1,13 +1,19 @@
 
-import { HttpClient } from '../utils/HttpClient.js';
+import { Request } from '../../lib/Request.js';
+import { Response } from '../../lib/Response.js';
+import { HttpClient } from '../../lib/HttpClient.js';
+import { PARAMS, HEADERS } from '../../config/douyin.js';
 
-export async function onRequestGet(context) {
-    const url = new URL(context.request.url);
+export async function onRequestGet(context)
+{
+    // 实例化请求响应
+    const request  = new Request(context);
+    const response = new Response();
 
+    // 类型配置
     const typeData = {
         '推荐': { type: 'recommend', category_id: '1' },
         '热门榜': { type: 'rank', category_id: '7088298745502646280' },
-        // '收藏': { type: 'fav', category_id: '1' },
         '飙升榜': { type: 'rank', category_id: '708297994563059748' },
         '原创榜': { type: 'rank', category_id: '6854399861215747336' },
         '卡点': { type: 'category', category_id: '7395823327471782694' },
@@ -19,22 +25,24 @@ export async function onRequestGet(context) {
         '伤感': { type: 'category', category_id: '7397328346998213386' }
     };
 
-    const type = url.searchParams.get('type') || '推荐';
-    const page = url.searchParams.get('page') || 1;
+    // 获取参数（类型转换）
+    const type = request.get('type/s', '推荐');
+    const page = request.get('page/d', 1);
 
+    // 获取当前分类
     const currentType = typeData[type] || typeData['推荐'];
 
+    // 构造请求参数
     const queryData = {
         type: currentType.type,
         category_id: currentType.category_id,
-        cursor: (page - 1) * 20,
+        cursor: ( page - 1 ) * 20,
         count: 20
     };
 
+    // 请求接口
     const result = await HttpClient.get('https://creator.douyin.com/web/api/media/music/list', queryData);
 
-    return Response.json({
-        code: 0,
-        data: result.data
-    });
+    // 标准返回
+    return response.success(result.data, '获取成功');
 }
