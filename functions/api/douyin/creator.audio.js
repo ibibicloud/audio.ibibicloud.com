@@ -1,13 +1,13 @@
-import { Request } from '../../lib/Request.js';
-import { Response } from '../../lib/Response.js';
+import { HttpRequest } from '../../lib/HttpRequest.js';
+import { HttpResponse } from '../../lib/HttpResponse.js';
 import { HttpClient } from '../../lib/HttpClient.js';
 import { PARAMS, HEADERS } from '../../config/douyin.js';
 
 export async function onRequestGet(context)
 {
     // 实例化请求响应
-    const request  = new Request(context);
-    const response = new Response();
+    const req = new HttpRequest(context);
+    const res = new HttpResponse();
 
     // 类型配置
     const typeData = {
@@ -25,8 +25,8 @@ export async function onRequestGet(context)
     };
 
     // 获取参数
-    const type = request.get('type/s', '推荐');
-    const page = request.get('page/d', 1);
+    const type = req.get('type/s', '推荐');
+    const page = req.get('page/d', 1);
 
     // 获取当前分类
     const currentType = typeData[type] || typeData['推荐'];
@@ -36,24 +36,29 @@ export async function onRequestGet(context)
         ...PARAMS,
         type: currentType.type,
         category_id: currentType.category_id,
-        cursor: ( page - 1 ) * 20,
+        cursor: (page - 1) * 20,
         count: 20
     };
 
-    try {
-        // 发起请求（自动带上 headers 和 params）
-        const result = await HttpClient.get(
-            'https://creator.douyin.com/web/api/media/music/list',
-            queryData,
-            HEADERS
-        );
+    // 发起请求（HttpClient 已内置错误处理，不会抛出异常）
+    const result = await HttpClient.get(
+        'https://creator.douyin.com/web/api/media/music/list',
+        queryData,
+        HEADERS
+    );
 
-        // 成功返回
-        return response.success(result.data, '获取成功');
-
-    } catch (err) {
-        // 捕获错误，避免 1101
-        console.error('接口报错：', err);
-        return response.error('请求失败：' + err.message, 500);
+    // 判断请求结果
+    if ( result.ok ) {
+        // 返回数据时，可以附带下一页的 cursor
+        const responseData = {
+            list: result.data,
+            cursor: result.data?.cursor || 0,
+            has_more: result.data?.has_more || false
+        };
+        
+        return res.success(responseData, '获取成功');
+    } else {
+        console.error('抖音接口报错：', result.error);
+        return res.error('请求失败：' + result.error, result.status);
     }
 }
