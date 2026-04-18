@@ -1,4 +1,9 @@
 
+/**
+ * HTTP 请求封装类
+ * 用于 Cloudflare Pages 环境，封装请求参数、请求头、IP获取等功能
+ * 支持 ThinkPHP 风格的类型转换（如 id/d 转为整数）
+ */
 export class HttpRequest
 {
     /**
@@ -28,7 +33,7 @@ export class HttpRequest
      * @return {string} 请求方法（GET、POST、PUT、DELETE等）
      * 
      * @example
-     * req.method  // 'GET'
+     * if ( req.method === 'GET' ) { }
      */
     get method()
     {
@@ -42,14 +47,20 @@ export class HttpRequest
      * @return {any} 参数值，类型根据 key 中的标识自动转换
      * 
      * @example
-     * // 获取单个参数
-     * req.get('id')        // 返回字符串 '123'
-     * req.get('id/d')      // 返回数字 123
-     * req.get('name/s')    // 返回字符串 '张三'
-     * req.get('status/b')  // 返回布尔值 true/false
+     * // 获取单个参数（字符串）
+     * req.get('name')           // 返回 '张三'
+     * 
+     * // 获取单个参数并转换类型
+     * req.get('id/d')           // 返回 123（整数）
+     * req.get('price/f')        // 返回 19.99（浮点数）
+     * req.get('active/b')       // 返回 true（布尔值）
+     * req.get('name/s')         // 返回 '张三'（字符串）
      * 
      * // 获取所有参数
-     * const allParams = req.get()  // { id: '123', name: '张三' }
+     * const all = req.get()     // { id: '123', name: '张三' }
+     * 
+     * // 带默认值
+     * req.get('page/d', 1)      // 不存在则返回 1
      */
     get(key, def = null)
     {
@@ -63,8 +74,11 @@ export class HttpRequest
             return { ...this._get };
         }
 
+        // 提取原始参数名（去掉 /d、/s 等类型标识）
+        const originalKey = key.includes('/') ? key.split('/')[0] : key;
+        
         // 获取参数值，不存在则使用默认值
-        const value = this._get[key] ?? def;
+        const value = this._get[originalKey] ?? def;
         
         // 解析类型转换标识并返回
         return this._parseKey(key, value);
@@ -78,12 +92,13 @@ export class HttpRequest
      * 
      * @example
      * // 获取单个参数
-     * await req.post('id')        // 返回字符串 '123'
-     * await req.post('id/d')      // 返回数字 123
-     * await req.post('name/s')    // 返回字符串 '张三'
+     * const name = await req.post('name')
+     * 
+     * // 获取并转换类型
+     * const id = await req.post('id/d', 0)
      * 
      * // 获取所有参数
-     * const allParams = await req.post()  // { id: '123', name: '张三' }
+     * const all = await req.post()
      */
     async post(key, def = null)
     {
@@ -91,14 +106,10 @@ export class HttpRequest
         if ( !this._post ) {
             try {
                 // 尝试解析为 JSON 格式
-                // req.json() 将 JSON 字符串转换为 JavaScript 对象
-                // 例如：'{"name":"张三","age":25}' → { name: '张三', age: 25 }
                 this._post = await this.req.json();
             } catch {
                 try {
                     // JSON 解析失败，尝试解析为表单格式
-                    // req.formData() 将表单数据转换为 FormData 对象
-                    // Object.fromEntries() 将 FormData 转换为普通对象
                     const formData = await this.req.formData();
                     this._post = Object.fromEntries(formData);
                 } catch {
@@ -113,8 +124,11 @@ export class HttpRequest
             return { ...this._post };
         }
 
+        // 提取原始参数名（去掉 /d、/s 等类型标识）
+        const originalKey = key.includes('/') ? key.split('/')[0] : key;
+        
         // 获取参数值，不存在则使用默认值
-        const value = this._post[key] ?? def;
+        const value = this._post[originalKey] ?? def;
         
         // 解析类型转换标识并返回
         return this._parseKey(key, value);
@@ -128,11 +142,14 @@ export class HttpRequest
      * 
      * @example
      * // 获取单个请求头
-     * req.header('content-type')  // 'application/json'
-     * req.header('user-agent')    // 'Mozilla/5.0...'
+     * const ua = req.header('user-agent')
+     * const ct = req.header('content-type')
      * 
      * // 获取所有请求头
-     * const allHeaders = req.header()  // { 'content-type': 'application/json', ... }
+     * const all = req.header()
+     * 
+     * // 带默认值
+     * const token = req.header('authorization', '')
      */
     header(key, def = null)
     {
@@ -155,10 +172,11 @@ export class HttpRequest
 
     /**
      * 获取客户端真实IP
-     * @return {string} 客户端IP地址，优先获取 Cloudflare 的 cf-connecting-ip
+     * @return {string} 客户端IP地址
      * 
      * @example
-     * const clientIp = req.ip  // '192.168.1.1'
+     * const clientIp = req.ip
+     * console.log(clientIp)  // '192.168.1.1'
      */
     get ip()
     {
@@ -177,8 +195,12 @@ export class HttpRequest
      * @private
      * 
      * @example
-     * // key = 'id/d', value = '123' → 调用 _typeTransform('123', 'd') → 123
-     * // key = 'name', value = '张三' → 直接返回 '张三'
+     * // 带类型标识
+     * _parseKey('id/d', '123')     // 返回 123
+     * _parseKey('price/f', '19.9') // 返回 19.9
+     * 
+     * // 不带类型标识
+     * _parseKey('name', '张三')     // 返回 '张三'
      */
     _parseKey(key, value)
     {
@@ -212,6 +234,7 @@ export class HttpRequest
      * _typeTransform('1', 'b')        // true
      * _typeTransform('3.14', 'f')     // 3.14
      * _typeTransform(123, 's')        // '123'
+     * _typeTransform('', 'd')         // 0
      */
     _typeTransform(value, type)
     {
