@@ -1,7 +1,7 @@
 
-import { HttpRequest } from '../lib/HttpRequest.js';
-import { HttpResponse } from '../lib/HttpResponse.js';
-import { HttpClient } from '../lib/HttpClient.js';
+import { HttpRequest } from '../../lib/HttpRequest.js';
+import { HttpResponse } from '../../lib/HttpResponse.js';
+import { HttpClient } from '../../lib/HttpClient.js';
 
 export async function onRequestGet(context)
 {

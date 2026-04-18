@@ -1,6 +1,6 @@
 
-import { HttpRequest } from './lib/HttpRequest.js';
-import { HttpResponse } from './lib/HttpResponse.js';
+import { HttpRequest } from '../../lib/HttpRequest.js';
+import { HttpResponse } from '../../lib/HttpResponse.js';
 
 export async function onRequest(context)
 {
