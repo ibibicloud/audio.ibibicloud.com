@@ -19,26 +19,26 @@ export class Request
     /**
      * 获取 GET 参数，支持类型转换
      * @param {string} key 参数名，支持 id/d、name/s 格式
-     * @param {any} default 默认值
+     * @param {any} def 默认值
      * @return {any}
      */
-    get(key, default = null)
+    get(key, def = null)
     {
         if ( !this._get ) {
             this._get = Object.fromEntries(this.url.searchParams);
         }
 
-        const value = this._get[key] ?? default;
+        const value = this._get[key] ?? def;
         return this.__parseKey(key, value);
     }
 
     /**
      * 获取 POST 参数，支持类型转换
      * @param {string} key 参数名，支持 id/d、name/s 格式
-     * @param {any} default 默认值
+     * @param {any} def 默认值
      * @return {Promise<any>}
      */
-    async post(key, default = null)
+    async post(key, def = null)
     {
         if ( !this._post ) {
             try {
@@ -48,17 +48,17 @@ export class Request
             }
         }
 
-        const value = this._post[key] ?? default;
+        const value = this._post[key] ?? def;
         return this.__parseKey(key, value);
     }
 
     /**
      * 获取 GET/POST 参数（自动合并）
      * @param {string} key 参数名
-     * @param {any} default 默认值
+     * @param {any} def 默认值
      * @return {Promise<any>}
      */
-    async param(key, default = null)
+    async param(key, def = null)
     {
         const val = this.get(key);
         if ( val !== null ) {
@@ -66,16 +66,16 @@ export class Request
         }
 
         const postVal = await this.post(key);
-        return postVal ?? default;
+        return postVal ?? def;
     }
 
     /**
      * 获取请求头
      * @param {string} key 请求头名称
-     * @param {any} default 默认值
+     * @param {any} def 默认值
      * @return {any}
      */
-    header(key, default = null)
+    header(key, def = null)
     {
         if ( !this._headers ) {
             this._headers = {};
@@ -83,18 +83,18 @@ export class Request
                 this._headers[k.toLowerCase()] = v;
             }
         }
-        return this._headers[key.toLowerCase()] ?? default;
+        return this._headers[key.toLowerCase()] ?? def;
     }
 
     /**
      * 获取路由参数，如 /api/:id
      * @param {string} key 路由参数名
-     * @param {any} default 默认值
+     * @param {any} def 默认值
      * @return {any}
      */
-    route(key, default = null)
+    route(key, def = null)
     {
-        return this.ctx.params?.[key] ?? default;
+        return this.ctx.params?.[key] ?? def;
     }
 
     /**
